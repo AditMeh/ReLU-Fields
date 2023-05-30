@@ -1,0 +1,15 @@
+{
+    "dataset_name": "lego",
+    "lr": 5e-4,
+    "epochs": 1500,
+    "batch_size": 1,
+    "freq_num": 8,
+    "rendering_params": {
+        "t_n": 2,
+        "t_f": 6,
+        "w": 100,
+        "h": 100,
+        "num_samples": 128
+    },
+    "chunk": 25600
+}

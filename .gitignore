@@ -160,3 +160,5 @@ cython_debug/
 #.idea/
 NeRF-Scenes/*
 visualizations/extrinsic2pyramid/
+wandb/*
+NeRF_PL/*
