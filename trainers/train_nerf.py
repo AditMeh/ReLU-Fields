@@ -38,10 +38,9 @@ class NeRF_Trainer(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         gt_image, points, directions = batch
-
         rendered_img = self.forward(points, directions)
 
-        gt_image = gt_image.squeeze().permute(1,0)
+        gt_image = gt_image.squeeze().permute(1, 2, 0)
 
         loss = nn.MSELoss()(gt_image, rendered_img)
         self.log("train_loss", loss, on_step=True,

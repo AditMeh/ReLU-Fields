@@ -62,17 +62,17 @@ class BlenderDataset(torch.utils.data.Dataset):
 
         R, t = trans_mat[:3, :3], torch.squeeze(trans_mat[:3, 3:])
 
-        if self.mode == "train":
-            # In this case your rays will be
-            rays_points, rays_dirs, rand_ray_coords = pose_to_rays_sampled(
-                R, t, self.focal, self.h, self.w, self.t_n, self.t_f, self.num_samples, self.num_rays)
+        # if self.mode == "train":
+        #     # In this case your rays will be
+        #     rays_points, rays_dirs, rand_ray_coords = pose_to_rays_sampled(
+        #         R, t, self.focal, self.h, self.w, self.t_n, self.t_f, self.num_samples, self.num_rays)
 
-            return im[:, rand_ray_coords[:, 0], rand_ray_coords[:, 1]], rays_points, rays_dirs
+        #     return im[:, rand_ray_coords[:, 0], rand_ray_coords[:, 1]], rays_points, rays_dirs
 
-        if self.mode == "val" or self.mode == "test":
-            rays_points, rays_dirs = pose_to_rays(
-                R, t, self.focal, self.h, self.w, self.t_n, self.t_f, self.num_samples)
-            return im, rays_points, rays_dirs
+        # if self.mode == "val" or self.mode == "test":
+        rays_points, rays_dirs = pose_to_rays(
+            R, t, self.focal, self.h, self.w, self.t_n, self.t_f, self.num_samples)
+        return im, rays_points, rays_dirs
 
 
 class BlenderDataModule(pl.LightningDataModule):
