@@ -14,16 +14,19 @@ import pytorch_lightning as pl
 
 import json
 
-from utils.rendering import pose_to_rays
+from utils.rendering import pose_to_rays, pose_to_rays_sampled
 
 
 class BlenderDataset(torch.utils.data.Dataset):
-    def __init__(self, dataset_name, mode, w, h, t_n, t_f, num_samples):
+    def __init__(self, dataset_name, mode, w, h, t_n, t_f, num_samples, num_rays):
 
         self.w = w
         self.h = h
         self.t_n, self.t_f = t_n, t_f
         self.num_samples = num_samples
+        self.num_rays = num_rays
+
+        self.mode = mode
 
         if dataset_name not in os.listdir("NeRF-Scenes/"):
             logging.error("Invalid dataset name")
@@ -51,16 +54,25 @@ class BlenderDataset(torch.utils.data.Dataset):
         return len(self.frames)
 
     def __getitem__(self, idx):
-        im = Image.open(
-            self.dataset_path + self.frames[idx]["file_path"][2:] + ".png").convert('RGB')
+        im = self.transforms(Image.open(
+            self.dataset_path + self.frames[idx]["file_path"][2:] + ".png").convert('RGB'))
+
         trans_mat = torch.FloatTensor(
             self.frames[idx]["transform_matrix"])
 
         R, t = trans_mat[:3, :3], torch.squeeze(trans_mat[:3, 3:])
-        rays_points = pose_to_rays(
-            R, t, self.focal, self.h, self.w, self.t_n, self.t_f, self.num_samples)
 
-        return self.transforms(im), rays_points
+        if self.mode == "train":
+            # In this case your rays will be
+            rays_points, rays_dirs, rand_ray_coords = pose_to_rays_sampled(
+                R, t, self.focal, self.h, self.w, self.t_n, self.t_f, self.num_samples, self.num_rays)
+
+            return im[:, rand_ray_coords[:, 0], rand_ray_coords[:, 1]], rays_points, rays_dirs
+
+        if self.mode == "val" or self.mode == "test":
+            rays_points, rays_dirs = pose_to_rays(
+                R, t, self.focal, self.h, self.w, self.t_n, self.t_f, self.num_samples)
+            return im, rays_points, rays_dirs
 
 
 class BlenderDataModule(pl.LightningDataModule):
@@ -80,6 +92,7 @@ class BlenderDataModule(pl.LightningDataModule):
         elif stage == "test":
             self.test_dataset = BlenderDataset(
                 self.dataset_name, "test", **self.rendering_params)
+
         self.val_dataset = BlenderDataset(
             self.dataset_name, "val", **self.rendering_params)
 
@@ -100,3 +113,10 @@ class BlenderDataModule(pl.LightningDataModule):
             self.test_dataset,
             batch_size=self.batch_size, num_workers=0)
         return test
+
+    def make_copy_val(self):
+        val = torch.utils.data.DataLoader(
+            BlenderDataset(
+                self.dataset_name, "val", **self.rendering_params),
+            batch_size=self.batch_size, num_workers=0)
+        return val

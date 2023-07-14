@@ -21,21 +21,21 @@ if __name__ == "__main__":
     with open(args.config_path, 'r') as f:
         config = json.load(f)
 
-    model = NeRF_Trainer(config)
-
-    train_loader = BlenderDataModule(
+    loader = BlenderDataModule(
         config["dataset_name"], config["batch_size"], **config["rendering_params"])
 
-    checkpoint = ModelCheckpoint(monitor="validation_loss_epoch")
+    model = NeRF_Trainer(config, loader.make_copy_val())
 
-    early_stop = EarlyStopping(monitor="train_loss_epoch",
+    checkpoint = ModelCheckpoint(monitor="validation_loss_epoch", filename=f'{config["dataset_name"]}-{{epoch}}')
+
+    early_stop = EarlyStopping(monitor="validation_loss_epoch",
                                min_delta=1e-8, patience=5, mode="min",
                                stopping_threshold=1e-4, divergence_threshold=10, verbose=False)
 
     wandb_logger = WandbLogger(
-        name=config['dataset_name'], project='NeRF_PL')
+        name=config['dataset_name'], project='NeRF_PL', config=config)
 
     trainer = pl.Trainer(devices=[0], accelerator="gpu", max_epochs=config["epochs"],
                          precision=32, callbacks=[checkpoint, early_stop], logger=wandb_logger)
 
-    trainer.fit(model, train_loader, ckpt_path=args.checkpoint)
+    trainer.fit(model, loader, ckpt_path=args.checkpoint)

@@ -7,8 +7,8 @@
     "rendering_params": {
         "t_n": 2,
         "t_f": 6,
-        "w": 400,
-        "h": 400,
+        "w": 100,
+        "h": 100,
         "num_samples": 128,
         "num_rays": 10000 
     },
